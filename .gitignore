@@ -1,0 +1,15 @@
+# 忽略数据
+data/
+outputs/
+logs/
+cache/
+*.parquet
+*.csv
+*.pt
+*.bin
+*.safetensors
+
+# 忽略环境和缓存
+__pycache__/
+.ipynb_checkpoints/
+.cache/
