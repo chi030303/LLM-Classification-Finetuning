@@ -9,7 +9,8 @@ from transformers import (
     AutoModelForSequenceClassification, 
     TrainingArguments, 
     Trainer,
-    DataCollatorWithPadding
+    DataCollatorWithPadding,
+    EarlyStoppingCallback
 )
 from datasets import Dataset
 
@@ -21,6 +22,18 @@ parser.add_argument("--model_name", type=str, default="microsoft/deberta-v3-larg
 parser.add_argument("--data_path", type=str, default="data/processed/train_with_folds.csv") # 对齐数据路径
 parser.add_argument("--output_dir", type=str, default="outputs/models/deberta_v3_large")   # 对齐输出路径
 parser.add_argument("--resume_from_checkpoint", type=str, default=None, help="Path to checkpoint to resume from")
+parser.add_argument("--max_len", type=int, default=1536, help="Max sequence length") 
+
+parser.add_argument("--per_device_train_batch_size", type=int, default=2)
+parser.add_argument("--gradient_accumulation_steps", type=int, default=8)
+parser.add_argument("--num_train_epochs", type=int, default=3)
+parser.add_argument("--learning_rate", type=float, default=5e-6)
+parser.add_argument("--dataloader_num_workers", type=int, default=4)
+# Boolean 开关
+parser.add_argument("--gradient_checkpointing", action="store_true", help="Enable gradient checkpointing")
+parser.add_argument("--bf16", action="store_true", help="Enable bf16")
+parser.add_argument("--fp16", action="store_true", help="Enable fp16")
+
 args = parser.parse_args()
 
 REAL_OUTPUT_DIR = f"{args.output_dir}_fold{args.fold}"
@@ -44,7 +57,7 @@ def preprocess_function(examples):
     return tokenizer(
         combined_texts,
         truncation=True,
-        max_length=1280, 
+        max_length=args.max_len, 
         padding=False # DataCollator 会负责动态 Padding，这里 False 是对的
     )
 
@@ -76,23 +89,26 @@ model = AutoModelForSequenceClassification.from_pretrained(
 # --- 4. 训练参数 (单卡 V100 调优) ---
 training_args = TrainingArguments(
     output_dir=REAL_OUTPUT_DIR,
-    learning_rate=5e-6,             # 单卡通常调低一点 LR 比较稳
-    per_device_train_batch_size=2,  # V100 32G 可以跑 BS=4, length=1024
+    learning_rate=args.learning_rate,             # 单卡通常调低一点 LR 比较稳
+    per_device_train_batch_size=args.per_device_train_batch_size,  # 48G 显存跑 1536 长度，BS=4 应该很轻松
     per_device_eval_batch_size=8,
-    gradient_accumulation_steps=8,  # 4 * 4 = 16 (等效 Batch Size)
-    num_train_epochs=3,
+    gradient_accumulation_steps=args.gradient_accumulation_steps,  # 4 * 4 = 16 (等效 Batch Size)
+    num_train_epochs=args.num_train_epochs,
     weight_decay=0.01,
     eval_strategy="steps",
-    eval_steps=200,
+    eval_steps=100,
     save_strategy="steps",
-    save_steps=200,
+    save_steps=100,
     save_total_limit=2,
     load_best_model_at_end=True,
     metric_for_best_model="log_loss",
     greater_is_better=False,
-    fp16=True,
+    bf16=args.bf16,
+    fp16=args.fp16,
     report_to="none",
     disable_tqdm=True,
+    gradient_checkpointing=args.gradient_checkpointing,
+    dataloader_num_workers=args.dataloader_num_workers,
 )
 
 def compute_metrics(eval_pred):
@@ -110,6 +126,7 @@ trainer = Trainer(
     tokenizer=tokenizer,
     data_collator=DataCollatorWithPadding(tokenizer),
     compute_metrics=compute_metrics,
+    callbacks=[EarlyStoppingCallback(early_stopping_patience=5)],
 )
 
 last_checkpoint = None
