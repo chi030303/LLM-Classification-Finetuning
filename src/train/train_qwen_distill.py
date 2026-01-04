@@ -139,10 +139,10 @@ class DistillDataset(torch.utils.data.Dataset):
         self.df = df
         self.tokenizer = tokenizer
         self.max_len = max_len
-        self.prompts = df['prompt_text'].tolist()
-        self.res_a = df['res_a_text'].tolist()
-        self.res_b = df['res_b_text'].tolist()
-        self.labels = df['labels'].tolist()
+        # self.prompts = df['prompt_text'].tolist()
+        # self.res_a = df['res_a_text'].tolist()
+        # self.res_b = df['res_b_text'].tolist()
+        # self.labels = df['labels'].tolist()
         # self.teacher_probs = df[['teacher_a', 'teacher_b', 'teacher_tie']].values
         self.teacher_probs_df = df[['teacher_a', 'teacher_b', 'teacher_tie']]
 
@@ -151,13 +151,28 @@ class DistillDataset(torch.utils.data.Dataset):
         return len(self.df)
 
     def __getitem__(self, idx):
-        text = TEMPLATE.format(p=self.prompts[idx], a=self.res_a[idx], b=self.res_b[idx])
-        # Tokenizer 直接返回字典
+        row = self.df.iloc[idx]
+        
+        text = TEMPLATE.format(
+            prompt=str(row['prompt_text']), 
+            res_a=str(row['res_a_text']), 
+            res_b=str(row['res_b_text'])
+        )
+        
         inputs = self.tokenizer(text, truncation=True, max_length=self.max_len)
-        inputs['labels'] = self.labels[idx]
-        # inputs['teacher_probs'] = self.teacher_probs[idx]
-        inputs['teacher_probs'] = self.teacher_probs_df.iloc[idx].tolist()
+        
+        inputs['labels'] = row['labels']
+        # 直接从 row 读取 teacher_probs
+        inputs['teacher_probs'] = torch.tensor([row['teacher_a'], row['teacher_b'], row['teacher_tie']], dtype=torch.float)
+        
         return inputs
+        # text = TEMPLATE.format(p=self.prompts[idx], a=self.res_a[idx], b=self.res_b[idx])
+        # # Tokenizer 直接返回字典
+        # inputs = self.tokenizer(text, truncation=True, max_length=self.max_len)
+        # inputs['labels'] = self.labels[idx]
+        # # inputs['teacher_probs'] = self.teacher_probs[idx]
+        # inputs['teacher_probs'] = self.teacher_probs_df.iloc[idx].tolist()
+        # return inputs
 
 train_ds = DistillDataset(train_df, tokenizer, args.max_len)
 valid_ds = DistillDataset(valid_df, tokenizer, args.max_len)
@@ -192,7 +207,7 @@ training_args = TrainingArguments(
     per_device_train_batch_size=32,
     gradient_accumulation_steps=1,
     per_device_eval_batch_size=64,
-    num_train_epochs=2,
+    num_train_epochs=1,
     bf16=True,
     logging_steps=50,
     eval_strategy="steps",
