@@ -12,8 +12,8 @@ export PYTHONUNBUFFERED=1
 echo "🚀 Starting Qwen 14B Serial Training (Fold 0-4)..."
 
 # 2. 循环跑 5 个 Fold
-# for fold in {0..4}
-for fold in 2
+for fold in {0..4}
+# for fold in 2
 do
     echo "=================================================="
     echo "▶️  Running Qwen FOLD $fold"
@@ -25,7 +25,7 @@ do
     # 使用优化后的 python 脚本
     $PYTHON_EXEC src/train/train_qwen.py \
         --fold $fold \
-        --model_name "/root/autodl-tmp/base_models/Qwen3-14B" \
+        --model_name "/root/autodl-tmp/llm_classification_finetuning/base_models/Qwen3-14B" \
         --max_len 3072 \
         --learning_rate 1e-4 \
         > "$LOG_FILE" 2>&1

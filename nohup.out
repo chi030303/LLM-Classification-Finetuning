@@ -1,18 +1,26 @@
 🚀 Starting Qwen 14B Serial Training (Fold 0-4)...
 ==================================================
+▶️  Running Qwen FOLD 0
+==================================================
+✅ Fold 0 Completed.
+==================================================
+▶️  Running Qwen FOLD 1
+==================================================
+Terminated
+❌ Fold 1 Failed! Check outputs/logs/qwen_fold1.log
+==================================================
 ▶️  Running Qwen FOLD 2
 ==================================================
+Terminated
 ❌ Fold 2 Failed! Check outputs/logs/qwen_fold2.log
-🏆 All Qwen Folds Finished!
-🚀 Starting Qwen 14B Serial Training (Fold 0-4)...
 ==================================================
-▶️  Running Qwen FOLD 2
+▶️  Running Qwen FOLD 3
 ==================================================
-❌ Fold 2 Failed! Check outputs/logs/qwen_fold2.log
-🏆 All Qwen Folds Finished!
-🚀 Starting Qwen 14B Serial Training (Fold 0-4)...
+Terminated
+❌ Fold 3 Failed! Check outputs/logs/qwen_fold3.log
 ==================================================
-▶️  Running Qwen FOLD 2
+▶️  Running Qwen FOLD 4
 ==================================================
-✅ Fold 2 Completed.
+Terminated
+❌ Fold 4 Failed! Check outputs/logs/qwen_fold4.log
 🏆 All Qwen Folds Finished!

@@ -123,9 +123,9 @@ training_args = TrainingArguments(
     
     # [显存优化] RTX 6000 96G 显存巨大，BS 开大提速
     # per_device_train_batch_size=16,   
-    per_device_train_batch_size=12,   
-    gradient_accumulation_steps=2,    # 总 Batch = 32
-    per_device_eval_batch_size=32,    # 推理时显存占用小，开大
+    per_device_train_batch_size=8,  
+    gradient_accumulation_steps=4,  # 总 Batch 还是 32
+    per_device_eval_batch_size=16,
     
     num_train_epochs=1,               # 14B 跑 1 轮
     bf16=True,                        # 必须开启 BF16
@@ -151,7 +151,7 @@ training_args = TrainingArguments(
     
     report_to="none",
     disable_tqdm=True,
-    dataloader_num_workers=8          
+    dataloader_num_workers=4          
 )
 
 def compute_metrics(eval_pred):
@@ -171,7 +171,7 @@ trainer = Trainer(
     args=training_args,
     train_dataset=train_ds,
     eval_dataset=valid_ds,
-    tokenizer=tokenizer,
+    # tokenizer=tokenizer,
     data_collator=DataCollatorWithPadding(tokenizer),
     compute_metrics=compute_metrics,
 )
